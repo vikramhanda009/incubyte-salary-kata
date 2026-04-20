@@ -243,7 +243,6 @@ it('should return 500 if database fails', async () => {
   expect(res.status).toBe(500);
   expect(res.body.error).toBe("Internal Server Error");
 });
-
 it('should fail when updating employee with zero salary', async () => {
   const res = await request(app)
     .put('/api/employees/1')

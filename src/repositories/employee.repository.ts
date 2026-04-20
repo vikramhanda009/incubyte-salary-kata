@@ -10,7 +10,7 @@ export class EmployeeRepository {
   async create(data: CreateEmployeeDto): Promise<Employee> {
     return this.prisma.employee.create({ data });
   }
-
+  
   async findById(id: number): Promise<Employee | null> {
     return this.prisma.employee.findUnique({ where: { id } });
   }
