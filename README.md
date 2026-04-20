@@ -72,6 +72,11 @@ src/
     └── employee.types.ts         # CreateEmployeeDto, UpdateEmployeeDto
 
 tests/
+├── app.test.ts                   # App initialization, routes, etc.
+└── errors/
+    └── AppError.test.ts          # AppError tests
+└── controllers/
+    ├── employee.controller.test.ts # Controller tests
 └── integration/
     ├── employees.test.ts          # CRUD tests (create, read, update, delete)
     └── salary.test.ts             # Salary + metrics tests incl. edge cases
