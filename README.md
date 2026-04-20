@@ -241,7 +241,6 @@ Per Incubyte's instructions, AI usage is documented transparently:
 - Typed DTO design to eliminate `any`
 
 ---
-
 ## Environment Variables
 
 ```dotenv
