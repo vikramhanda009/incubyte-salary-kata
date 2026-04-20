@@ -1,6 +1,13 @@
 import request from 'supertest';
 import app from '../../src/app';
 import prisma from '../../src/lib/prisma';
+beforeAll(() => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterAll(() => {
+  (console.error as jest.Mock).mockRestore();
+});
 
 it('should return 400 when request body is empty', async () => {
   const res = await request(app)
