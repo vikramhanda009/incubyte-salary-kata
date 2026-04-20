@@ -5,9 +5,9 @@ import { CreateEmployeeDto, UpdateEmployeeDto } from '../types/employee.types';
 
 // Derive the Employee type directly from Prisma's inferred return types
 type Employee = Awaited<ReturnType<PrismaClient['employee']['findUniqueOrThrow']>>;
+
 export class EmployeeRepository {
   private prisma = prisma;
-
   async create(data: CreateEmployeeDto): Promise<Employee> {
     return this.prisma.employee.create({ data });
   }
