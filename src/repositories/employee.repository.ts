@@ -36,7 +36,6 @@ export class EmployeeRepository {
   async findByCountry(country: string): Promise<Employee[]> {
     return this.prisma.employee.findMany({ where: { country } });
   }
-
   async getAverageByJobTitle(jobTitle: string) {
     return this.prisma.employee.aggregate({
       where: { jobTitle },
