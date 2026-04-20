@@ -5,13 +5,12 @@ import prisma from '../../src/lib/prisma';
 beforeEach(async () => {
   await prisma.employee.deleteMany();
 });
-
 afterAll(async () => {
   await prisma.$disconnect();
 });
 
 describe('Employee CRUD', () => {
-  
+
   const validPayload = {
     fullName: 'Vikram Singh',
     jobTitle: 'Senior Software Engineer',
