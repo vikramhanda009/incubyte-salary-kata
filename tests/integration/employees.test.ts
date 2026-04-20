@@ -121,7 +121,6 @@ describe('Employee CRUD', () => {
       const check = await request(app).get(`/api/employees/${created.id}`);
       expect(check.status).toBe(404);
     });
-
     it('should return 404 when deleting non-existent employee', async () => {
       const res = await request(app).delete('/api/employees/99999');
       expect(res.status).toBe(404);
