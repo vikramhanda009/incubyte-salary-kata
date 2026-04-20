@@ -1,11 +1,15 @@
-import { Employee } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { AppError } from '../errors/AppError';
+import { CreateEmployeeDto, UpdateEmployeeDto } from '../types/employee.types';
+
+// Derive the Employee type directly from Prisma's inferred return types
+type Employee = Awaited<ReturnType<PrismaClient['employee']['findUniqueOrThrow']>>;
 
 export class EmployeeRepository {
   private prisma = prisma;
 
-  async create(data: any): Promise<Employee> {
+  async create(data: CreateEmployeeDto): Promise<Employee> {
     return this.prisma.employee.create({ data });
   }
 
@@ -17,7 +21,7 @@ export class EmployeeRepository {
     return this.prisma.employee.findMany();
   }
 
-  async update(id: number, data: any): Promise<Employee> {
+  async update(id: number, data: UpdateEmployeeDto): Promise<Employee> {
     const exists = await this.findById(id);
     if (!exists) throw new AppError('Employee not found', 404);
     return this.prisma.employee.update({ where: { id }, data });
@@ -30,16 +34,14 @@ export class EmployeeRepository {
   }
 
   async findByCountry(country: string): Promise<Employee[]> {
-    return this.prisma.employee.findMany({
-      where: {country}
-    });
+    return this.prisma.employee.findMany({ where: { country } });
   }
 
   async getAverageByJobTitle(jobTitle: string) {
     return this.prisma.employee.aggregate({
-        where: { jobTitle },
+      where: { jobTitle },
       _avg: { salary: true },
-     _count: { _all: true }
+      _count: { _all: true }
     });
   }
 }

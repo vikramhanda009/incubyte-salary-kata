@@ -10,9 +10,9 @@ A production-ready REST API for managing employee records with salary calculatio
 |-------|-----------|--------|
 | Runtime | Node.js + TypeScript | Type safety, production-grade reliability |
 | Framework | Express.js | Lightweight, well-understood REST framework |
-| ORM | Prisma | Type-safe DB access, clean migrations |
-| Database | SQLite | Zero-config, file-based, fits the kata scope |
-| Validation | Joi | Declarative schema validation with clear error messages |
+| ORM | Prisma | Type-safe DB access, zero-config SQLite |
+| Database | SQLite | Embedded, file-based, fits the kata scope |
+| Validation | Joi | Declarative schema validation with clear errors |
 | Testing | Jest + Supertest | Fast, deterministic integration tests |
 
 ---
@@ -23,34 +23,25 @@ A production-ready REST API for managing employee records with salary calculatio
 - Node.js v18+
 - npm v9+
 
-### Installation & Setup
+### Setup
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Generate Prisma client
 npx prisma generate
-
-# 3. Push schema to SQLite database
 npx prisma db push
-
-# 4. Start development server
 npm run dev
 ```
 
-Server runs at: `http://localhost:3000`
+Server: `http://localhost:3000`
 
 ---
 
 ## Running Tests
 
 ```bash
-# Run all tests once
-npm run test:ci
-
-# Run in watch mode (during development)
-npm test
+npm test           # run once (CI-safe, no watch mode)
+npm run test:watch # watch mode for development
+npm run test:ci    # with coverage report
 ```
 
 ---
@@ -59,55 +50,57 @@ npm test
 
 ```
 src/
-├── app.ts                        # Express app setup (no listen — clean for testing)
-├── server.ts                     # Entry point — starts HTTP server
+├── app.ts                        # Express app — no listen() here
+├── server.ts                     # Starts HTTP server — never imported by tests
 ├── lib/
-│   └── prisma.ts                 # Singleton Prisma client
+│   └── prisma.ts                 # Singleton PrismaClient
 ├── controllers/
-│   └── employee.controller.ts    # Route handlers
+│   └── employee.controller.ts    # Route handlers, typed DTOs
 ├── services/
-│   └── salary.service.ts         # Pure salary calculation logic
+│   └── salary.service.ts         # Pure salary calculation — no side effects
 ├── repositories/
-│   └── employee.repository.ts    # All database queries
+│   └── employee.repository.ts    # All DB queries, typed with DTOs
 ├── routes/
-│   └── index.ts                  # Route definitions
+│   └── index.ts                  # Route → controller wiring
 ├── validations/
 │   └── employee.validation.ts    # Joi schemas
 ├── middlewares/
 │   └── validate.ts               # Validation middleware
 ├── errors/
-│   └── AppError.ts               # Custom error class
+│   └── AppError.ts               # Custom error with HTTP status
 └── types/
-    └── employee.types.ts         # TypeScript interfaces
+    └── employee.types.ts         # CreateEmployeeDto, UpdateEmployeeDto
 
 tests/
 └── integration/
-    ├── employees.test.ts          # CRUD endpoint tests
-    └── salary.test.ts             # Salary calculation & metrics tests
+    ├── employees.test.ts          # CRUD tests (create, read, update, delete)
+    └── salary.test.ts             # Salary + metrics tests incl. edge cases
 
 prisma/
-├── schema.prisma                  # Database schema
-└── salary_management.db           # SQLite DB (auto-created)
+├── schema.prisma
+└── salary_management.db           # auto-created on first db push
 ```
 
 ---
 
 ## API Reference
 
-### Base URL
-```
-http://localhost:3000/api
-```
+**Base URL:** `http://localhost:3000/api`
 
 ---
 
 ### Employee CRUD
 
-#### Create Employee
-```http
-POST /api/employees
-Content-Type: application/json
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/employees` | Create employee |
+| `GET` | `/employees` | List all employees |
+| `GET` | `/employees/:id` | Get one employee |
+| `PUT` | `/employees/:id` | Update employee (partial allowed) |
+| `DELETE` | `/employees/:id` | Delete employee — returns `204` |
 
+**Create / Update body:**
+```json
 {
   "fullName": "Vikram Singh",
   "jobTitle": "Software Engineer",
@@ -115,70 +108,44 @@ Content-Type: application/json
   "salary": 1500000
 }
 ```
-**Response `201`**
-```json
-{
-  "id": 1,
-  "fullName": "Vikram Singh",
-  "jobTitle": "Software Engineer",
-  "country": "India",
-  "salary": 1500000,
-  "createdAt": "2026-04-19T10:00:00.000Z",
-  "updatedAt": "2026-04-19T10:00:00.000Z"
-}
-```
 
-#### Get All Employees
-```http
-GET /api/employees
-```
+**Validation rules:**
 
-#### Get Employee by ID
-```http
-GET /api/employees/:id
-```
-
-#### Update Employee
-```http
-PUT /api/employees/:id
-Content-Type: application/json
-
-{
-  "salary": 1800000
-}
-```
-
-#### Delete Employee
-```http
-DELETE /api/employees/:id
-```
-**Response `204 No Content`**
+| Field | Rule |
+|-------|------|
+| `fullName` | Required, string, 3–100 chars |
+| `jobTitle` | Required, string, 3–100 chars |
+| `country` | Required, string, 2–100 chars |
+| `salary` | Required, positive number |
 
 ---
 
 ### Salary Calculation
 
-#### Get Salary Breakdown
 ```http
 GET /api/salary/:id
+GET /api/salary/:id?gross=200000
 ```
 
-**Response**
+- **Without `?gross`** — uses the employee's stored salary as the gross input
+- **With `?gross=<amount>`** — calculates deductions against the provided gross amount instead
+
+**Response:**
 ```json
 {
   "employeeId": 1,
   "fullName": "Vikram Singh",
-  "grossSalary": 1500000,
-  "tds": 150000,
-  "netSalary": 1350000,
+  "grossSalary": 200000,
+  "tds": 20000,
+  "netSalary": 180000,
   "country": "India"
 }
 ```
 
-**Deduction Rules**
+**Deduction Rules:**
 
-| Country | TDS Rate | Example (gross 100,000) |
-|---------|----------|--------------------------|
+| Country | TDS | Example (gross 100,000) |
+|---------|-----|------------------------|
 | India | 10% | TDS = 10,000 → Net = 90,000 |
 | United States | 12% | TDS = 12,000 → Net = 88,000 |
 | All others | 0% | TDS = 0 → Net = gross |
@@ -187,11 +154,9 @@ GET /api/salary/:id
 
 ### Salary Metrics
 
-#### By Country — Min, Max, Average
 ```http
 GET /api/metrics/country/:country
 ```
-**Response**
 ```json
 {
   "country": "India",
@@ -202,11 +167,9 @@ GET /api/metrics/country/:country
 }
 ```
 
-#### By Job Title — Average
 ```http
 GET /api/metrics/job-title/:jobTitle
 ```
-**Response**
 ```json
 {
   "jobTitle": "Software Engineer",
@@ -215,106 +178,80 @@ GET /api/metrics/job-title/:jobTitle
 }
 ```
 
----
-
-## Validation Rules
-
-| Field | Rule |
-|-------|------|
-| `fullName` | Required, string, 3–100 characters |
-| `jobTitle` | Required, string, 3–100 characters |
-| `country` | Required, string, 2–100 characters |
-| `salary` | Required, positive number |
-
-**Error response `400`**
-```json
-{
-  "error": "Validation failed: salary must be a positive number"
-}
-```
+Both return `404` when no matching employees exist.
 
 ---
 
 ## TDD Approach
 
-This project was built following the **Three Laws of TDD** (as referenced in the assessment):
+Built following the **Three Laws of TDD**:
 
-1. **Red** — Write a failing test first. No production code without a failing test.
-2. **Green** — Write the minimum code to make the test pass.
-3. **Refactor** — Clean up without breaking tests.
+1. **Red** — Write a failing test. No production code without one.
+2. **Green** — Write the minimum code to pass the test.
+3. **Refactor** — Improve without breaking tests.
 
-### Commit History reflects this loop:
-```
-feat: red - failing test for POST /employees
-feat: green - minimal create employee implementation
-refactor: extract validation into middleware
-feat: red - failing test for salary calculation (India TDS)
-feat: green - implement salary calculation service
-refactor: extract salary logic into pure SalaryService
-feat: red - failing tests for metrics endpoints
-feat: green - implement country and job title metrics
-refactor: extract repository layer, singleton Prisma client
-fix: split app.ts from server.ts to fix test teardown leak
-```
+Each feature was developed in this loop:
 
-Each commit is a deliberate, small step — not a bulk dump. The history is the TDD story.
+- Write failing test for the behaviour
+- Implement just enough to pass
+- Refactor: extract service, repository, validation into separate layers
+- Repeat for the next behaviour
 
 ---
 
 ## Architecture Decisions
 
-**`app.ts` vs `server.ts` split**
-Express app setup is in `app.ts` with no `listen()`. `server.ts` only starts the HTTP server. Tests import `app` directly — no port binding, no open handles, no teardown warnings.
+**`app.ts` / `server.ts` split**
+`app.ts` sets up Express with no `listen()`. `server.ts` is the only file that calls `listen()` and is never imported by tests. This eliminates the "worker process force exited" teardown warning.
 
-**Singleton Prisma Client (`src/lib/prisma.ts`)**
-One shared `PrismaClient` instance across the entire app. Prevents connection leaks from multiple `new PrismaClient()` calls, and ensures `$disconnect()` in `afterAll` cleanly closes the single connection.
+**Singleton PrismaClient (`src/lib/prisma.ts`)**
+One shared instance across the app. Prevents connection leaks from multiple `new PrismaClient()` calls and ensures `afterAll(() => prisma.$disconnect())` actually closes the only open connection.
+
+**Typed DTOs — no `any`**
+`CreateEmployeeDto` and `UpdateEmployeeDto` are used throughout the controller and repository. `req.body` is never passed directly into Prisma — the controller explicitly maps fields to a typed object.
 
 **Pure `SalaryService`**
-Salary calculation logic is a pure function — no DB, no HTTP, no side effects. Trivially unit-testable and easy to extend with new country rules.
+No database, no HTTP, no side effects. Input in, output out. Trivially unit-testable and easy to extend with new country rules.
 
-**Repository Pattern**
-All database queries live in `EmployeeRepository`. Controllers never touch Prisma directly. Clean separation makes both layers independently testable and replaceable.
+**Optional `?gross` query param**
+The spec says "calculates deductions from a given gross salary, given employee ID". The endpoint supports an optional `?gross=<amount>` parameter so callers can calculate against any gross — not just the stored salary. Falls back to stored salary when omitted.
 
 ---
 
 ## Implementation Details — AI Usage
 
-As per Incubyte's assessment instructions, AI was used intentionally and transparently:
+Per Incubyte's instructions, AI usage is documented transparently:
 
 | Task | Tool | How |
 |------|------|-----|
-| Boilerplate scaffolding | Claude (Anthropic) | Generated initial Express + Prisma + TypeScript setup |
-| Test case generation | Claude (Anthropic) | Edge cases: 0 salary, missing fields, unknown country, 404s |
-| README | Claude (Anthropic) | Drafted structure; decisions and content written manually |
-| Bug diagnosis | Claude (Anthropic) | Identified teardown leak, prisma path nesting issue |
+| Initial scaffolding | Claude (Anthropic) | Express + Prisma + TypeScript boilerplate |
+| Test case generation | Claude (Anthropic) | Edge cases: missing fields, 404s, deleted employees, invalid gross |
+| Bug diagnosis | Claude (Anthropic) | Teardown leak, `prisma/prisma/` path nesting, `--watch` in CI |
+| README | Claude (Anthropic) | Structure drafted; all decisions written manually |
 
-**What AI did NOT decide:**
-- Architecture (app/server split, singleton Prisma, repository pattern)
-- TDD commit strategy and sequencing
-- Which edge cases matter for this domain
-- Validation rules and error response shapes
-
-AI accelerated scaffolding and surfaced options. Every architectural and quality decision was made by the engineer.
+**What AI did not decide:**
+- Architecture layers (app/server split, singleton Prisma, repository pattern)
+- The `?gross` query param design
+- TDD sequencing and which behaviours to test first
+- Typed DTO design to eliminate `any`
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in the project root:
-
 ```dotenv
+# .env (root of project)
 DATABASE_URL="file:./salary_management.db"
 PORT=3000
 ```
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | SQLite path (relative to `prisma/` folder) | — |
-| `PORT` | HTTP server port | `3000` |
+> `file:` paths are resolved relative to the `prisma/` folder where `schema.prisma` lives.
+> `file:./salary_management.db` → `prisma/salary_management.db` ✅
+> `file:./prisma/salary_management.db` → `prisma/prisma/salary_management.db` ❌
 
 ---
 
-## Database Reset
+## Reset Database
 
 ```bash
 rm prisma/salary_management.db

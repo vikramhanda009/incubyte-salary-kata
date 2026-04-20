@@ -5,10 +5,11 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "jest --watch",
-    "test:ci": "jest --coverage",
+    "test": "jest --runInBand --forceExit",
+    "test:ci": "jest --runInBand --forceExit --coverage",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
