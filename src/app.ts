@@ -18,10 +18,27 @@ app.get('/', (_req: Request, res: Response) => {
 // Global error handler
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({ error: err.message });
-  }
+  return res.status(err.statusCode).json({
+    error: err.statusCode === 500
+      ? "Internal Server Error"
+      : err.message
+  });
+}
+if (err instanceof AppError) {
+  return res.status(err.statusCode).json({
+    error: err.statusCode === 500
+      ? "Internal Server Error"
+      : err.message
+  });
+}
+
+if (process.env.NODE_ENV !== 'test') {
   console.error('Unexpected error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+}
+
+return res.status(500).json({
+  error: "Internal Server Error"
+});
 });
 
 export default app;

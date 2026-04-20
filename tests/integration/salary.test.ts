@@ -89,6 +89,14 @@ describe('Salary Calculation & Metrics', () => {
       const res = await request(app).get(`/api/salary/${employee.id}?gross=-5000`);
       expect(res.status).toBe(400);
     });
+
+    it('should return 400 for zero gross value', async () => {
+      const employee = await prisma.employee.create({
+        data: { fullName: 'Alice', jobTitle: 'Dev', country: 'India', salary: 100000 }
+      });
+      const res = await request(app).get(`/api/salary/${employee.id}?gross=0`);
+      expect(res.status).toBe(400);
+    });
   });
 
   describe('GET /api/metrics/country/:country', () => {
@@ -176,6 +184,13 @@ describe('Salary Calculation & Metrics', () => {
       const res = await request(app).get('/api/metrics/job-title/Engineer');
       expect(res.body.averageSalary).toBe(80000);
       expect(res.body.count).toBe(1);
+    });
+    it('should return 400 for zero gross value', async () => {
+      const employee = await prisma.employee.create({
+        data: { fullName: 'Alice', jobTitle: 'Dev', country: 'India', salary: 100000 }
+      });
+      const res = await request(app).get(`/api/salary/${employee.id}?gross=0`);
+      expect(res.status).toBe(400);
     });
   });
 });

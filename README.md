@@ -262,3 +262,10 @@ PORT=3000
 rm prisma/salary_management.db
 npx prisma db push
 ```
+
+## Improvements After Review
+
+- Cleaned duplicate commits to maintain proper TDD history
+- Strengthened validation (salary must be > 0)
+- Fixed missing Prisma client setup file
+- Added additional test coverage for update edge cases

@@ -15,10 +15,13 @@ export class EmployeeRepository {
     return this.prisma.employee.findUnique({ where: { id } });
   }
 
-  async findAll(): Promise<Employee[]> {
-    return this.prisma.employee.findMany();
+ async findAll() {
+  try {
+    return await this.prisma.employee.findMany();
+  } catch (err) {
+    throw new AppError('Database error', 500);
   }
-
+}
   async update(id: number, data: UpdateEmployeeDto): Promise<Employee> {
     const exists = await this.findById(id);
     if (!exists) throw new AppError('Employee not found', 404);

@@ -31,10 +31,10 @@ export const createEmployee = async (req: Request, res: Response, next: NextFunc
 
 export const getAllEmployees = async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const employees = await repo.findAll();
+  const employees = await repo.findAll();
     res.json(employees);
   } catch (err) {
-    next(err);
+    next(err); 
   }
 };
 
@@ -89,8 +89,12 @@ export const calculateNetSalary = async (req: Request, res: Response, next: Next
 
     if (rawGross !== undefined) {
       gross = parseFloat(rawGross as string);
-      if (isNaN(gross) || gross < 0) {
+      
+      if (isNaN(gross)) {
         throw new AppError('gross must be a non-negative number', 400);
+      }
+      if (gross <= 0) {
+        throw new AppError("Salary must be greater than zero", 400);
       }
     } else {
       gross = Number(employee.salary);
